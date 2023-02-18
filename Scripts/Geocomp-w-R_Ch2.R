@@ -1,3 +1,6 @@
+##Geocomputation with R
+##Chapter 2: Geographic data in R
+
 #load packages
 library(sf) #classes and functions for vector data
 library(terra) #classes and functions for raster data
