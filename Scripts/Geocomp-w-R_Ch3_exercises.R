@@ -132,6 +132,103 @@ class(us_states_stats) #tibble and dataframe. no longer an sf object.
 #exercise 8
 #us_states_df has two more rows than us_states. 
 #How can you find them? (hint: try to use the dplyr::anti_join() function)
+#the smaller df must be second for this to work
 us_states_df <- rename(us_states_df, NAME = state)
-anti_join(us_states, us_states_df, 
-          by = "NAME")
+anti_join(us_states_df, us_states, 
+          by = "NAME")#Alaska and Hawaii are missing from us_states_df
+
+#exercise 9
+#what was the population density in 2015 in each state?
+#What was the population density in 2010 in each state?
+state_pop <- us_states %>% 
+  mutate(POP_DENSITY_10 = round(total_pop_10 / AREA),
+         POP_DENSITY_15 = round(total_pop_15 / AREA),
+          .before = geometry)#add 2 new columns with statistic to data frame
+state_pop#view it         
+
+#exercise 10
+#How much has population density changed between 2010 and 2015 in each state? 
+#Calculate the change in percentages and map them.
+delta_pop <- state_pop$POP_DENSITY_15 - state_pop$POP_DENSITY_10 #absolute change
+percent_pop <- (delta_pop / state_pop$POP_DENSITY_10) *100 #into a percent 
+state_pop_change <- state_pop %>% 
+  mutate(POP_CHANGE = percent_pop) #add column 
+plot(state_pop_change["POP_CHANGE"], #plot it
+     main = "% change in population from 2010-2015") #change title 
+
+#exercise 11
+#change the columns' names in us_states to lowercase
+colnames(us_states) <- tolower(colnames(us_states))
+names(us_states)
+
+#Exercise 12
+#Using us_states and us_states_df create a new object called us_states_sel. 
+#The new object should have only two variables - median_income_15 and geometry. 
+#Change the name of the median_income_15 column to Income.
+us_states_df <- rename(us_states_df, state = "NAME")#reset OG column names
+us_states_sel <- left_join(us_states_df, us_states, 
+                           by = c(state = "name")) %>% #join data frames
+  select(median_income_15, geometry) %>% #pull out only income and geom columns
+  rename(Income = median_income_15)#change column name to Income
+class(us_states_sel)#no longer an sf object
+st_as_sf(us_states_sel)
+class(us_states_sel)#not sure why this isn't working
+
+#exercise 13
+#Calculate the change in the number of residents living below the poverty level 
+#between 2010 and 2015 for each state. 
+#(Hint: See ?us_states_df for documentation on the poverty level columns.) 
+delta_pov <- us_states_df %>% 
+  mutate(change_in_poverty = poverty_level_15 - poverty_level_10, 
+         state = state, 
+         .keep = "none")
+            
+delta_pov
+#Bonus: Calculate the change in the percentage of residents living below the 
+#poverty level in each state.
+percent_pov <- left_join(us_states_df, us_states, 
+                         by = c(state = "name")) %>% 
+  mutate(percent_in_poverty = (poverty_level_15 / total_pop_15) * 100, 
+         .before = "geoid")
+percent_pov
+
+#exercise 14
+#What was the minimum, average and maximum state’s number of people living 
+#below the poverty line in 2015 for each region? 
+poverty_stats <- left_join(us_states_df, us_states, 
+                           by = c(state = "name")) %>% #join the dataframes
+  select(state, region, poverty_level_10, poverty_level_15) %>% 
+  group_by(region) %>% 
+  summarize(min_poverty = min(poverty_level_15), 
+            max_poverty = max(poverty_level_15), 
+            avg_poverty = mean(poverty_level_15))
+
+#Bonus: What is the region with the largest increase in people living below 
+#the poverty line?
+poverty_stats2 <- left_join(us_states_df, us_states, 
+                            by = c(state = "name")) %>% #join the dataframes
+  select(state, region, poverty_level_10, poverty_level_15) %>% 
+  group_by(region) %>% 
+  summarize(total_poverty_15 = sum(poverty_level_15), 
+            total_poverty_10  = sum(poverty_level_10)) %>% 
+  mutate(delta_poverty = total_poverty_15 - total_poverty_10) %>% 
+  arrange(desc(delta_poverty))
+poverty_stats2#the south had the greatest increase
+
+#exercise 15
+#Create a raster from scratch with nine rows and columns and a resolution of 
+#0.5 decimal degrees (WGS84). 
+#fill it with random numbers
+vals15 <- runif(1:81)
+rast15 <- rast(nrows = 9, 
+               ncols = 9, 
+               xmin = -2.25, xmax = 2.25, ymin = -2.25, ymax = 2.25, 
+               vals = vals15)
+res(rast15)
+plot(rast15)
+#extract the values of the four corner cells
+rast15[c(1, 9, 72, 81)]
+rast15[1, 1]
+rast15[9]
+rast15[9, 1]
+rast15[72]
