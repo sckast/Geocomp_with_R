@@ -226,3 +226,22 @@ world_new_names <-  world |>
 names(world_new_names)
 
 #'to remove geometry to speed up aggregation, ONLY USE `st_drop_geometry()`
+
+#####################################
+#3.3 MANIPULATING RASTER OBJECTS
+
+elev = rast(nrows = 6, ncols = 6,
+            xmin = -1.5, xmax = 1.5, ymin = -1.5, ymax = 1.5,
+            vals = 1:36)
+
+grain_order = c("clay", "silt", "sand")
+grain_char = sample(grain_order, 36, replace = TRUE)
+grain_fact = factor(grain_char, levels = grain_order)
+grain = rast(nrows = 6, ncols = 6, 
+             xmin = -1.5, xmax = 1.5, ymin = -1.5, ymax = 1.5,
+             vals = grain_fact)
+
+levels(grain) = data.frame(value = c(1, 2, 3), wetness = c("wet", "moist", "dry"))
+levels(grain)
+
+plot(grain)
